@@ -1,0 +1,33 @@
+x-prolog: &prolog
+  image: sinica-prolog
+  build:
+    context: .
+    dockerfile: prolog/Dockerfile
+  depends_on:
+    server:
+      condition: service_healthy
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "127.0.0.1:4040:4040"
+    healthcheck:
+      test: ["CMD", "bash", "-c", ": </dev/tcp/127.0.0.1/4040"]
+      interval: 2s
+      timeout: 1s
+      retries: 15
+
+  client:
+    <<: *prolog
+    command: ["client/main.pl", "--", "server", "4040"]
+    profiles: ["play"]
+    stdin_open: true
+    tty: true
+
+  bot:
+    <<: *prolog
+    command: ["bot/main.pl", "--", "server", "4040", "Дед-Фильтр"]
+    profiles: ["play"]
